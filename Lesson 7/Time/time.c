@@ -20,8 +20,6 @@ MODULE_VERSION("0.1");
 #define PROC_DIRECTORY  "Lesson_7_time"
 #define PROC_FILENAME   "read_time"
 
-
-//static char *proc_buffer;
 struct timespec ts = {0};
 
 static struct proc_dir_entry *proc_dir;
@@ -31,28 +29,8 @@ static int example_read(struct file *file_p, char __user *buffer, size_t length,
 
 static struct file_operations proc_fops = {
     .read  = example_read,
-    //.write = example_write,
 };
 
-/*
-static int create_buffer(void)
-{
-    proc_buffer = kmalloc(BUFFER_SIZE, GFP_KERNEL);
-    if (NULL == proc_buffer)
-        return -ENOMEM;
-    proc_msg_length = 0;
-
-    return 0;
-}
-
-static void cleanup_buffer(void)
-{
-    if (proc_buffer) {
-        kfree(proc_buffer);
-        proc_buffer = NULL;
-    }
-}
-*/
 
 static int create_proc_example(void)
 {
@@ -85,59 +63,21 @@ static void cleanup_proc_example(void)
 	
 static int example_read(struct file *file_p, char __user *buffer, size_t length, loff_t *offset)
 {
-
-	//time_t t = time(NULL);
-	
-	struct timeval tv;
-	
-	getnstimeofday(&ts);
-	do_gettimeofday(&tv);
-	//printk("linux time: %d-%d-%d %d:%d:%d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
-	printk("timespec: %u (sec)\n", ts.tv_sec);
-	printk("timeval: %u (sec)\n", tv.tv_sec);
-
-	//tm = *localtime(&t);
+    struct timeval tv;
+    
+    getnstimeofday(&ts);
+    do_gettimeofday(&tv);
+    printk("timespec: %u (sec)\n", ts.tv_sec);
+    printk("timeval: %u (sec)\n", tv.tv_sec);
 
     return 0;
 }
 
-/*
-static int example_write(struct file *file_p, const char __user *buffer, size_t length, loff_t *offset)
-{
-    size_t msg_length;
-    size_t left;
-
-    if (length > BUFFER_SIZE)
-    {
-        printk(KERN_WARNING MODULE_TAG "reduse message length from %u to %u chars\n", length, BUFFER_SIZE);
-        msg_length = BUFFER_SIZE;
-    }
-    else
-        msg_length = length;
-
-    left = raw_copy_from_user(proc_buffer, buffer, msg_length);
-
-    proc_msg_length = msg_length - left;
-    proc_msg_read_pos = 0;
-
-    if (left)
-        printk(KERN_ERR MODULE_TAG "failed to write %u from %u chars\n", left, msg_length);
-    else
-        printk(KERN_NOTICE MODULE_TAG "written %u chars\n", msg_length);
-
-    return length;
-}
-*/
 
 static int __init example_init(void)
 {
-    int err;
-
-    //err = create_buffer();
-    //if (err)
-        //goto error;
-
-    err = create_proc_example();
+    int err = create_proc_example();
+	
     if (err)
         goto error;
 
@@ -147,7 +87,7 @@ static int __init example_init(void)
 error:
     printk(KERN_ERR MODULE_TAG "failed to load\n");
     cleanup_proc_example();
-    //cleanup_buffer();
+
     return err;
 }
 
@@ -155,7 +95,6 @@ error:
 static void __exit example_exit(void)
 {
     cleanup_proc_example();
-    //cleanup_buffer();
     printk(KERN_NOTICE MODULE_TAG "exited\n");
 }
 
