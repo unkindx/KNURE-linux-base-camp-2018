@@ -13,7 +13,7 @@
 MODULE_LICENSE("Dual BSD/GPL");
 MODULE_AUTHOR("Dyomin Denis");
 MODULE_DESCRIPTION("Procfs read");
-MODULE_VERSION("0.1");
+MODULE_VERSION("0.2");
 
 
 #define MODULE_TAG      "Time module "
@@ -60,11 +60,11 @@ static void cleanup_proc_example(void)
     }
 }
 
-	
+
 static int example_read(struct file *file_p, char __user *buffer, size_t length, loff_t *offset)
 {
     struct timeval tv;
-    
+
     getnstimeofday(&ts);
     do_gettimeofday(&tv);
     printk("timespec: %u (sec)\n", ts.tv_sec);
@@ -77,7 +77,7 @@ static int example_read(struct file *file_p, char __user *buffer, size_t length,
 static int __init example_init(void)
 {
     int err = create_proc_example();
-	
+
     if (err)
         goto error;
 
