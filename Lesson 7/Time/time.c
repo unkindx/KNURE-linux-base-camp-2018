@@ -98,7 +98,6 @@ static void __exit example_exit(void)
     printk(KERN_NOTICE MODULE_TAG "exited\n");
 }
 
-
 module_init(example_init);
 module_exit(example_exit);
 
