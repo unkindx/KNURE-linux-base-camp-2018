@@ -1,6 +1,5 @@
 #! /bin/sh
 
-
 export CROSS_COMPILE=${HOME}/gcc-linaro-7.3.1/bin/arm-linux-gnueabihf-
 
 export TRAINING_ROOT=${HOME}/opi/

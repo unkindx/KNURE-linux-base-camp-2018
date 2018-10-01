@@ -19,3 +19,4 @@ dtb:
 		make ARCH=arm -C $(HOME)/linux-4.18.10/ dtbs
 
 .PHONY: clean default config dtb
+
