@@ -321,25 +321,11 @@ static void st7735_set_addr_win(struct lcd_data *lcd, int xs, int ys, int xe, in
 static void st7735_reset(struct lcd_data *lcd)
 {
 	/* Reset controller */
-	//gpio_set_value(lcd->RST_gpiod, 0);
 	TFT_RST_RESET;
 	udelay(10);
-	//gpio_set_value(lcd->RST_gpiod, 1);
 	TFT_RST_SET;
 	mdelay(120);
 }
-
-
-
-
-
-static void LCD_Rotate(LCD_Orientation orientation) {
-
-// TODO
-
-}
-
-
 
 static void LCD_Init(void){
 
@@ -381,7 +367,6 @@ static void update_display_work(struct work_struct *work)
 {
 	struct lcd_data *lcd =
 		container_of(work, struct lcd_data, display_update_ws);
-	//ssd1307fb_update_display(lcd);
 	st7735_UpdateScreen(lcd);
 }
 
@@ -749,6 +734,9 @@ static int st7735s_remove(struct spi_device *spi)
 
 	cancel_work_sync(&lcd->display_update_ws);
 
+    kfree(lcd_vmem);
+    kfree(lcd_buff);
+	
 	unregister_framebuffer(info);
 
 	class_remove_file(sys_class, &class_attr_clear);
