@@ -25,6 +25,7 @@ static struct device *dev;
 static const struct of_device_id my_drvr_match[];
 
 
+
 typedef enum {
 	LCD_Landscape,
 	LCD_Portrait
@@ -39,7 +40,7 @@ struct lcd_data {
 	struct class *sys_class;
 	struct gpio_desc *RST_gpiod;
 	struct gpio_desc *DC_gpiod;
-	//struct gpio_desc *CS_gpiod;
+	struct gpio_desc *CS_gpiod;
 
 	struct work_struct display_update_ws;
 
@@ -49,7 +50,7 @@ struct lcd_data {
 	u16 height;
 	u8 RST_state;
 	u8 DC_state;
-	//u8 CS_state;
+	u8 CS_state;
 };
 
 
@@ -89,11 +90,24 @@ static struct fb_var_screeninfo st7735s_var = {
 
 
 
+
+
 static void UtilWaitDelay(u32 delay)
 {
 
 }
 
+
+
+/*
+static void CS_Force(u8 state)
+{
+	gpiod_set_value(lcd->CS_gpiod, state);
+
+	UtilWaitDelay(0x0000000F);
+	//dev_info(dev, "%s (%d)\n", __FUNCTION__, state);
+}
+*/
 
 static void RST_Force(u8 state)
 {
@@ -119,6 +133,12 @@ static void DC_Force(u8 state)
 #define TFT_RST_SET		RST_Force(1);
 #define TFT_RST_RESET	RST_Force(0);
 
+/*
+#define TFT_CS_SET		CS_Force(1);
+#define TFT_CS_RESET	CS_Force(0);
+*/
+
+
 
 /* Init script function */
 struct st7735_function {
@@ -135,7 +155,8 @@ enum st7735_cmd {
 	ST7735_DELAY
 };
 
-/* lcd configuration */
+
+
 static struct st7735_function st7735_cfg_script[] = {
 	{ ST7735_START, ST7735_START},
 	{ ST7735_CMD, ST7735_SWRESET},
@@ -321,11 +342,25 @@ static void st7735_set_addr_win(struct lcd_data *lcd, int xs, int ys, int xe, in
 static void st7735_reset(struct lcd_data *lcd)
 {
 	/* Reset controller */
+	//gpio_set_value(lcd->RST_gpiod, 0);
 	TFT_RST_RESET;
 	udelay(10);
+	//gpio_set_value(lcd->RST_gpiod, 1);
 	TFT_RST_SET;
 	mdelay(120);
 }
+
+
+
+
+
+static void LCD_Rotate(LCD_Orientation orientation) {
+
+// TODO
+
+}
+
+
 
 static void LCD_Init(void){
 
@@ -367,6 +402,7 @@ static void update_display_work(struct work_struct *work)
 {
 	struct lcd_data *lcd =
 		container_of(work, struct lcd_data, display_update_ws);
+	//ssd1307fb_update_display(lcd);
 	st7735_UpdateScreen(lcd);
 }
 
@@ -486,16 +522,19 @@ static int get_platform_info(struct spi_device *pdev)
 			dev_info(dev, "np->child->name = %s\n", np->child->name);
 
 
+
 		gpiod_cnt = gpiod_count(dev, "reset");
 		dev_info(dev, "gpiod_cnt = %d\n", gpiod_cnt);
 
-		//lcd->CS_gpiod = devm_gpiod_get(dev, "cs", GPIOD_OUT_HIGH);
-		//if (IS_ERR(lcd->CS_gpiod)) {
-		//	dev_err(dev, "fail to get reset-gpios()\n");
-		//	return EINVAL;
-		//}
-		//if(!gpiod_direction_output(lcd->CS_gpiod, 1))
-		//	dev_info(dev, "cs-gpios set as OUT\n");
+		lcd->CS_gpiod = devm_gpiod_get(dev, "cs", GPIOD_OUT_HIGH);
+		if (IS_ERR(lcd->CS_gpiod)) {
+			dev_err(dev, "fail to get reset-gpios()\n");
+			return EINVAL;
+		}
+		if(!gpiod_direction_output(lcd->CS_gpiod, 1))
+			dev_info(dev, "cs-gpios set as OUT\n");
+
+
 
 		lcd->RST_gpiod = devm_gpiod_get(dev, "reset", GPIOD_OUT_HIGH);
 		if (IS_ERR(lcd->RST_gpiod)) {
@@ -523,6 +562,7 @@ static int get_platform_info(struct spi_device *pdev)
 
 	return 0;
 }
+
 
 
 static int st7735s_setcolreg (u_int regno,
@@ -558,6 +598,8 @@ static ssize_t st7735s_write(struct fb_info *info, const char __user *buf,
 	u8 __iomem *dst;
 
 	total_size = info->fix.smem_len;
+
+	//dev_info(dev, "%s\n", __FUNCTION__);
 
 	if (p > total_size)
 		return -EINVAL;
@@ -696,7 +738,7 @@ static int st7735s_probe(struct spi_device *spi)
 
 	dev_info(dev, "Hello, world!\n");
 	dev_info(dev, "spiclk %u KHz.\n",	(spi->max_speed_hz + 500) / 1000);
-	dev_info(dev, "LCD mem addr: 0x%X", lcd_vmem);
+
 
 	if(!get_platform_info(spi)){
 		dev_err(dev, "failed to get platform info\n");
@@ -734,9 +776,6 @@ static int st7735s_remove(struct spi_device *spi)
 
 	cancel_work_sync(&lcd->display_update_ws);
 
-    kfree(lcd_vmem);
-    kfree(lcd_buff);
-	
 	unregister_framebuffer(info);
 
 	class_remove_file(sys_class, &class_attr_clear);
